@@ -1,0 +1,64 @@
+##FAA Data download script
+
+###download raw data
+
+# Run ID:   
+# Experiment name: AG890
+
+# Download location
+/home/users/dhamim/workingdir/DATA/fermentation/AG890
+
+bs download run -i *Insert_Run_ID* -o /home/users/dhamim/workingdir/DATA/fermentation/AG890
+
+#delete the sample sheet
+
+#open terminal at fermentation/AG890
+
+bcl2fastq --processing-threads 8 --create-fastq-for-index-reads --use-bases-mask Y251,I8,I8,Y251 --runfolder-dir ./ --barcode-mismatches 0 --output-dir LSU_Data
+
+
+## make analysis directory
+mkdir analysis.MLD
+
+##copy fastq data over
+cp ./LSU_Data/*.fastq.gz ./analysis.MLD/
+
+
+## change directory
+cd ./analysis.MLD
+
+
+########################################################################
+########################################################################
+
+## Demultiplex LSU - order of the lane files matter!
+
+ clsplitseq --runname=LSU_Data --truncateN=enable --index1file=index1-edit.txt --index2file=index2-edit.txt --primerfile=fwd.primer.LSU.Ns.txt --reverseprimerfile=rev.primer.LSU.Ns.txt --minqualtag=20 --numthreads=8 Undetermined_S0_L001_R1_001.fastq.gz Undetermined_S0_L001_I1_001.fastq.gz Undetermined_S0_L001_I2_001.fastq.gz Undetermined_S0_L001_R2_001.fastq.gz Demultiplexed_LSU
+
+
+
+# Change directory file up
+
+
+# Change directory
+cd ./Demultiplexed_LSU
+
+# Removing "undetermined" files.
+
+rm *undetermined*fastq.gz
+
+# Merging of paired-end reads with PEAR.
+
+for f in `ls *LSUF.forward.fastq.gz | grep -o -P '^[^\.]+'`
+do pear -f $f.forward.fastq.gz -r $f.reverse.fastq.gz -o $f -p 0.0001 -u 0.01 -j 8
+done
+
+
+# Filtering of merged reads.
+for f in `ls *forward_primer_ITS_S2F.assembled.fastq | grep -o -P '^[^\.]+'`
+do clfilterseq --minqual=30 --minlen=150 --maxplowqual=0.1 --numthreads=8 $f.assembled.fastq $f.filtered.PE150.fastq
+done
+
+##dhamim@dhamim:~/workingdir/DATA/faa/analysis.MLD.Feb22/Demultiplexed_LSU$ awk '{s++}END{print s/4}' *.assembled.fastq
+ 
+## Repeat from Step 17 for 16S 
