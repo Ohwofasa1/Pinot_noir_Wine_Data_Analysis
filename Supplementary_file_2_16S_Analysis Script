@@ -296,7 +296,7 @@ ps_genus_location <- phyloseq::tax_glom(ps_rel_abund, "Genus")
 phyloseq::taxa_names(ps_genus_location) <- phyloseq::tax_table(ps_genus_location)[, "Genus"]
 phyloseq::otu_table(ps_genus_location)[1:4, 1:4]
 
-#### To make winery relative abundance plot 
+#### To make winery relative abundance plot using core fungi microbiome 
 
 #Subset groups to winery environmental sysytem/location
 Winery_gen <- phyloseq::subset_samples(ps_genus_location, Location == "Winery")
@@ -304,8 +304,11 @@ Winery_gen <- phyloseq::subset_samples(ps_genus_location, Location == "Winery")
 ps_gen_rel_winery <- microbiome::transform(Winery_gen, "compositional")
 
 ps_gen_rel_winery <- Winery_gen %>%
-  aggregate_rare(level = "Genus", detection = 50/100, prevalence = 70/100) %>% 
+  aggregate_rare(level = "Genus", detection = 0.0001, prevalence = 70/100) %>% 
   microbiome::transform(transform = "compositional")
+
+To see core Bacterial Microbiome associated with the Winery system
+core_members(ps_gen_rel_winery, detection = 0.0001, prevalence = 70/100)
 
 #Palette colors
 cb_palette <- c("#999999", "#E69F00", "#FF0000", "#87C1FF",
@@ -335,9 +338,12 @@ Vineyard_gen <- phyloseq::subset_samples(ps_genus_location, Location == "Vineyar
 ps_gen_rel_vine <- microbiome::transform(Vineyard_gen, "compositional")
 
 ps_gen_rel_vine <- Vineyard_gen %>%
-  aggregate_rare(level = "Genus", detection = 50/100, prevalence = 70/100) %>% 
+  aggregate_rare(level = "Genus", detection = 0.0001, prevalence = 70/100) %>% 
   microbiome::transform(transform = "compositional")
   
+ To see core bacterial Microbiome associated with the Vineyard system
+core_members(ps_gen_rel_vine, detection = 0.0001, prevalence = 70/100)
+ 
  #### Creating a palette with many colors
   
  cb_palette1 <- c("#999999", "#E69F00","#FF0000", "#0072B2",
