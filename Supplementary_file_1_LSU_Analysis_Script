@@ -277,7 +277,7 @@ ps_ge_location <- phyloseq::tax_glom(ps, "Genus")
 phyloseq::taxa_names(ps_ge_location) <- phyloseq::tax_table(ps_ge_location)[, "Genus"]
 phyloseq::otu_table(ps_ge_location)[1:4, 1:4]
 
-#### To make winery relative abundance plot 
+#### To make winery relative abundance plot using core fungi microbiome
 
 #Subset groups by environmental system to Winery
 Winery_ge_ps <- phyloseq::subset_samples(ps_ge_location, Location == "Winery")
@@ -285,8 +285,11 @@ Winery_ge_ps <- phyloseq::subset_samples(ps_ge_location, Location == "Winery")
 ps_ge_rel_winery <- microbiome::transform(Winery_ge_ps, "compositional")
 
 ps_ge_rel_winery <- Winery_ge_ps %>%
-  aggregate_rare(level = "Genus", detection = 50/100, prevalence = 70/100) %>% 
+  aggregate_rare(level = "Genus", detection = 0.0001, prevalence = 70/100) %>% 
   microbiome::transform(transform = "compositional")
+  
+## To see core Fungal Microbiome associated with the Winery system
+core_members(ps_ge_rel_winery, detection = 0.0001, prevalence = 70/100)
   
 #Palette colors
 cb_palette1 <- c("#999999", "#E69F00", "#009E73","#56B4E9", 
@@ -306,18 +309,19 @@ publication_style<- basic + theme(axis.line = element_line(size=0.5),panel.backg
 publication_style + scale_y_continuous(expand=c(0,0))              
   
 
-#### To make vineyard relative abundance plot 
+#### To make Vineyard relative abundance plot using core fungi microbiome
 
-#Subset groups to vineyard environmental sysytem
-  
-#Subset groups to vineyard environmental sysytem/location
-Vineyard_gen <- phyloseq::subset_samples(ps_genus_location, Location == "Vineyard")
+#Subset groups by environmental system to Vineyard
+Winery_ge_ps <- phyloseq::subset_samples(ps_ge_location, Location == "Vineyard")
 
-ps_gen_rel_vine <- microbiome::transform(Vineyard_gen, "compositional")
+ps_ge_rel_vine <- microbiome::transform(Vineyard_ge_ps, "compositional")
 
-ps_gen_rel_vine <- Vineyard_gen %>%
-  aggregate_rare(level = "Genus", detection = 50/100, prevalence = 70/100) %>% 
+ps_ge_rel_vine <- Vineyard_ge_ps %>%
+  aggregate_rare(level = "Genus", detection = 0.0001, prevalence = 70/100) %>% 
   microbiome::transform(transform = "compositional")
+  
+## To see core Fungal Microbiome associated with the Vineyard system
+core_members(ps_ge_rel_vine, detection = 0.0001, prevalence = 70/100)
   
  #### Creating a palette with many colors
   
