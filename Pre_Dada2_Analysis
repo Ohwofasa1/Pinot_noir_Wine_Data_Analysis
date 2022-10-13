@@ -33,14 +33,12 @@ cd ./analysis.MLD
 
  clsplitseq --runname=LSU_Data --truncateN=enable --index1file=index1-edit.txt --index2file=index2-edit.txt --primerfile=fwd.primer.LSU.Ns.txt --reverseprimerfile=rev.primer.LSU.Ns.txt --minqualtag=20 --numthreads=8 Undetermined_S0_L001_R1_001.fastq.gz Undetermined_S0_L001_I1_001.fastq.gz Undetermined_S0_L001_I2_001.fastq.gz Undetermined_S0_L001_R2_001.fastq.gz Demultiplexed_LSU
 
-# Change directory file up
-
-
 # Change directory
+
 cd ./Demultiplexed_LSU
 
 # Removing "undetermined" files.
 
 rm *undetermined*fastq.gz
 
-## Repeat from Step 17 for 16S 
+## Repeat from Step 17 for 16S sequences
