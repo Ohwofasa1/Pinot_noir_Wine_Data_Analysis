@@ -121,7 +121,7 @@ fitGTR <- update(fit, k=4, inv=0.2)
 fitGTR <- optim.pml(fitGTR, model = "GTR", optInv = TRUE, optGamma = TRUE,
                     rearrangement = "stochastic", control = pml.control(trace = 0))
 
-# Uploading Metadata
+# Metadata
 map <- import_qiime_sample_data("UclustCombinedMicrobiomeData.tsv")
 
 # Creating  Phyloseq object
@@ -137,7 +137,6 @@ set.seed(711)
 level_order <- c('Lag', 'Exp', 'S1','S2')
 
 DATA.2 <- ps  
-#DATA.2 = DATA.fun 
 
 df = as.data.frame(sample_data(DATA.2))
 #df$site = as.numeric(as.character(df$site))
@@ -228,8 +227,7 @@ vst_trans_count_tab <- assay(deseq_counts_vst)
 rarecurve(t(count_tab), step=100, col=sample_info_tab$color, lwd=2, ylab="ASVs", label=F)
 abline(v=(min(rowSums(t(count_tab))))) # Adding a vertical line at the fewest seqs in any sample to curve above 
 
-# Abundance value transformation. Essential so as to account for differences in library size, variance,scale, etc. 
-
+# Abundance value transformation. 
 ps_rel_abund <- phyloseq::transform_sample_counts(ps, function(x){x / sum(x)})
 
 #Plot top 6 genus
@@ -335,9 +333,8 @@ ps_ge_rel_vine <- Vineyard_ge_ps %>%
 # To see core Fungal Microbiome associated with the Vineyard system
 core_members(ps_ge_rel_vine, detection = 0.0001, prevalence = 70/100)
   
-# Creating a palette with many colors
 cb_palette <- c("#999999", "#E69F00", "#56B4E9",
-                "#F0E442","#9933FF", "#0072B2", "#D55E00", "#CC79A7","#000000") 
+                "#F0E442","#9933FF", "#0072B2", "#D55E00", "#CC79A7","#000000") # Creating a palette with many colors 
 
 # Actual plot 
 
@@ -430,7 +427,7 @@ NMDS<- xx + annotate("text", x = -0.9, y= 1.2, label = "Stress = 0.02") + theme(
 NMDS
 
 
-#Differential Abundance using DESeq2
+#Differential Abundance testing using DESeq2
 sample_data(ps)$Location <- as.factor(sample_data(ps)$Location)
 
 ds <- phyloseq_to_deseq2(ps, ~ Location)
