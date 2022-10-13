@@ -41,82 +41,98 @@ library(lme4)
 library(ggpubr)
 library(ALDEx2)
 
+#
 fnFs <- sort(list.files(path, pattern="_515f.forward.fastq", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_515f.reverse.fastq", full.names = TRUE))
 
+#
 sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 3)
 
+#
 plotQualityProfile(fnFs[1:2])
 plotQualityProfile(fnRs[1:2])
 
+#
 filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
 filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 
+#
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 
+#
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(220,200),
               maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
               compress=TRUE, multithread=FALSE) 
-              
+ 
+#
 errF <- learnErrors(filtFs, multithread=TRUE)
 errR <- learnErrors(filtRs, multithread=TRUE) 
 
+#
 plotErrors(errF, nominalQ=TRUE)
 plotErrors(errR, nominalQ=TRUE)
 
+#
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 
+#
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
 
+#
 seqtab <- makeSequenceTable(mergers)
 
+#
 table(nchar(getSequences(seqtab)))
 
+#
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
 
+#
 sum(seqtab.nochim)/sum(seqtab)
 
+#
 getN <- function(x) sum(getUniques(x))
 track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
 colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
 rownames(track) <- sample.names
-
 write.csv(track,"Sequencing Statistics - LSU.csv")
 
+#
 taxa <- assignTaxonomy(seqtab.nochim, "/nesi/project/landcare02543/data/Ohwofasa/ohwofasaa/ohwofasa/Wine_Data_Run_Repeated 02_May_2022/Fungi_Data_2021/LSU_Data_2021_samples/Tax/sh_general_release_s_10.05.2021.tar")
-
 taxa.print <- taxa 
 
+#
 sequences<- getSequences(seqtab.nochim)
 names(sequences)<-sequences
 
+#
 alignment <- AlignSeqs(DNAStringSet(sequences), anchor=NA)
 
+#
 phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
 
+#
 dm <- dist.ml(phang.align)
-
 treeNJ <- NJ(dm) 
-
 fit<- pml(treeNJ, data = phang.align)
-
 fitGTR <- update(fit, k=4, inv=0.2)
-
 fitGTR <- optim.pml(fitGTR, model = "GTR", optInv = TRUE, optGamma = TRUE,
                     rearrangement = "stochastic", control = pml.control(trace = 0))
-                    
+
+# Uploading Metadata
 map <- import_qiime_sample_data("UclustCombinedMicrobiomeData.tsv")
 
-## Creating  Phyloseq object
+# Creating  Phyloseq object
 ps <- phyloseq(otu_table(seqtab.nochim_final, taxa_are_rows = FALSE),
               tax_table(taxa.PRINT),phy_tree(fitGTR$tree))
-              
+
+# Merge ps with map
 ps <- merge_phyloseq(ps, map)
 ps
 
-  
+#  
 set.seed(711)
 level_order <- c('Lag', 'Exp', 'S1','S2')
 
@@ -129,30 +145,29 @@ df$LibrarySize = sample_sums(DATA.2)
 df = df[order(df$LibrarySize),]
 df$Index = seq(nrow(df))
 
+#
 ggplot(data=df, aes(x=Index, y=LibrarySize, colour= Location))+
   geom_point()+
   facet_wrap(~ factor(Ferment_Stage, level = level_order)) +
   scale_y_continuous(trans='sqrt')
   
- physeq.gen <- aggregate_taxa(ps,"Genus")
-
+#
+physeq.gen <- aggregate_taxa(ps,"Genus")
 dom.tax <- dominant_taxa(ps,level = "Genus", group="Location")
 head(dom.tax$dominant_overview)
 
-#Get count of phyla
+# Get count of phyla
 table(phyloseq::tax_table(ps)[, "Phylum"])
 
 #Get count of Genus
 table(phyloseq::tax_table(ps)[, "Genus"])
 
-# Compute prevalence of each feature, store as data.frame 
-
+# Compute prevalence of each feature
 prevdf <- apply(X = otu_table(ps), 
                MARGIN = ifelse(taxa_are_rows(ps), yes = 1, no = 2), 
                FUN = function(x){sum(x > 0)})
 
-# Add taxonomy and total read counts to this data.frame 
-
+# Add taxonomy and total read counts 
 prevdf <- data.frame(Prevalence = prevdf,
                     TotalAbundance = taxa_sums(ps),
                     tax_table(ps))
@@ -161,7 +176,6 @@ prevdf <- data.frame(Prevalence = prevdf,
 plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
 
 # Giving our seq headers more manageable names (ASV_1, ASV_2...)
-    
 asv_seqs <- colnames(seqtab.nochim_final)
 asv_headers <- vector(dim(seqtab.nochim_final)[2], mode="character")
 
@@ -169,7 +183,7 @@ for (i in 1:dim(seqtab.nochim_final)[2]) {
   asv_headers[i] <- paste(">ASV", i, sep="_")
 }
 
-# making and writing out a fasta of our final ASV seqs:
+# Making and writing out a fasta of our final ASV seqs:
     
 asv_fasta <- c(rbind(asv_headers, asv_seqs))
 write(asv_fasta, "ASVs.fa")
@@ -179,18 +193,16 @@ asv_tab <- t(seqtab.nochim_final)
 row.names(asv_tab) <- sub(">", "", asv_headers)
 write.table(asv_tab, "ASVs_counts.tsv", sep="\t", quote=F, col.names=NA)
 
-##  Giving taxonomy table corresponding names as above (ASV_1, ASV_2...)
-
+# Giving taxonomy table corresponding names as above (ASV_1, ASV_2...)
 row.names(taxa.PRINT) <- sub(">", "", asv_headers)
-
 write.table(taxa.PRINT, "ASVs_named_correctly.tsv", sep="\t", quote=F, col.names=NA)
 
+#
 vector_for_decontam <- rep(FALSE, 58)
-
 contam_df <- isContaminant(t(asv_tab), neg=vector_for_decontam)
-
 table(contam_df$contaminant)
 
+#
 tax_tab <- as.matrix(read.table("ASVs_named_correctly.tsv", header=T,
            row.names=1, check.names=F, sep="\t"))
 
@@ -206,24 +218,21 @@ sample_info_tab$color<- as.character(sample_info_tab$V5)
 count_tab <- read.table("ASVs_counts.tsv", header=T, row.names=1,
              check.names=F, sep="\t")
 
-###Normalizing for sampling depth
+#Normalizing for sampling depth
 
 deseq_counts <- DESeqDataSetFromMatrix(count_tab, colData = sample_info_tab, design = ~Location) 
 deseq_counts_vst <- varianceStabilizingTransformation(deseq_counts)
 vst_trans_count_tab <- assay(deseq_counts_vst)
 
-######Rarefaction curves
+#Rarefaction curves
 rarecurve(t(count_tab), step=100, col=sample_info_tab$color, lwd=2, ylab="ASVs", label=F)
+abline(v=(min(rowSums(t(count_tab))))) # Adding a vertical line at the fewest seqs in any sample to curve above 
 
-# and adding a vertical line at the fewest seqs in any sample
-abline(v=(min(rowSums(t(count_tab)))))
-
-## Abundance value transformation. Essential so as to account for
-## differences in library size, variance,scale, etc. 
+# Abundance value transformation. Essential so as to account for differences in library size, variance,scale, etc. 
 
 ps_rel_abund <- phyloseq::transform_sample_counts(ps, function(x){x / sum(x)})
 
-#####Plot top 6 genus
+#Plot top 6 genus
 
 mycols <- c("green", "red")
 
@@ -239,8 +248,13 @@ top_genera <- plot_listed_taxa(ps.genus, top_six,
                  dot.opacity = 0.25,
                  box.opacity = 0.25,
                  panel.arrange= "wrap",pan)
+                       
+comps <- make_pairs(sample_data(ps.genus)$Location)   ## Add p_value      
+p <- top_genera + stat_compare_means(
+      comparisons = comps,
+      label = "p.format", vjust = 0.19)
 
-top_genera
+print(p + ylab("Relative abundance") + scale_y_continuous(labels = scales::percent))
 
 #Agglomerate to phylum-level and rename
 
@@ -248,47 +262,46 @@ ps_phylum <- phyloseq::tax_glom(ps_rel_abund, "Phylum")
 phyloseq::taxa_names(ps_phylum) <- phyloseq::tax_table(ps_phylum)[, "Phylum"]
 phyloseq::otu_table(ps_phylum)[1:4, 1:4]
 
-#Subset ps object to any specific Genus of interest relevant to wine making 
-## e.g Metschnikowia
-#Saccharomyces
+#Subset ps object to any specific Genus of interest e.g Metschnikowia
 
 ps_metschi <- subset_taxa(ps_rel_abund, Genus == "Metschnikowia")
 
-#Agglomerate to phylum-level and rename
-
-ps_Met <- phyloseq::tax_glom(ps_metschi, "Genus")
+ps_Met <- phyloseq::tax_glom(ps_metschi, "Genus") #Agglomerate to phylum-level and rename
 phyloseq::taxa_names(ps_Met) <- phyloseq::tax_table(ps_Met)[, "Genus"]
 head(phyloseq::otu_table(ps_Met))
 
 level_order <- c('Lag','Exp','S1','S2')
 
-#Melt and plot
-phyloseq::psmelt(ps_Met) %>%
+met_mp<- phyloseq::psmelt(ps_Met) %>%   #Melt and plot
 ggplot(data = ., aes(x = Location, y = Abundance)) +
   geom_boxplot(outlier.shape  = NA) +
   geom_jitter(aes(color = OTU), height = 0, width = .2) +
   labs(x = "", y = "Abundance\n") +
   facet_wrap(OTU ~ factor(Ferment_Stage,level = level_order), scales = "free")
-  
- 
-####Subsetting by environmental system to Genus Level. 
+
+comps <- make_pairs(sample_data(ps_Met)$Location) ##Add p.value
+p <- met_mp + stat_compare_means(
+      comparisons = comps,
+      label = "p.format", vjust = 0.19)
+
+p + scale_y_continuous(labels = scales::percent) + ylab("Relative abundance") + theme(panel.background = element_rect(fill = 'white', colour = 'black'))
+
+
+#Subsetting by environmental system to Genus Level. 
 
 ps_ge_location <- phyloseq::tax_glom(ps, "Genus")
 phyloseq::taxa_names(ps_ge_location) <- phyloseq::tax_table(ps_ge_location)[, "Genus"]
 phyloseq::otu_table(ps_ge_location)[1:4, 1:4]
 
-#### To make winery relative abundance plot using core fungi microbiome
-
-#Subset groups by environmental system to Winery
-Winery_ge_ps <- phyloseq::subset_samples(ps_ge_location, Location == "Winery")
-
+# To make winery relative abundance plot using core fungi microbiome
+Winery_ge_ps <- phyloseq::subset_samples(ps_ge_location, Location == "Winery") #Subset groups by environmental system to Winery
 ps_ge_rel_winery <- microbiome::transform(Winery_ge_ps, "compositional")
 
 ps_ge_rel_winery <- Winery_ge_ps %>%
   aggregate_rare(level = "Genus", detection = 0.0001, prevalence = 70/100) %>% 
   microbiome::transform(transform = "compositional")
   
-## To see core Fungal Microbiome associated with the Winery system
+# To see core Fungal Microbiome associated with the Winery system
 core_members(ps_ge_rel_winery, detection = 0.0001, prevalence = 70/100)
   
 #Palette colors
@@ -299,20 +312,19 @@ cb_palette1 <- c("#999999", "#E69F00", "#009E73","#56B4E9",
 basic <- plot_composition(ps_ge_rel_winery, sample.sort = c("OPF7D1f", "OPF7D2f", "OPF7D3f", "OPF7D4f", 
                                                       "OPF7D5f", "OPF7D6f", "OPF7D7f","OPF7D8f","OPF7D9f","OPF7D10f","OPF7D11f","OPF7D12f","OPF7D13f","OPF7D14f","OPF7D15f",
                                                       "OPF7D16f","OPF7D17f","OPF7D18f","OPF7D19f","OPF7D20f","OPF7D21f","OPF7D22f","OPF7D23f","OPF7D24f","OPF7D25f","OPF7D26f",
-                                                      "OPF7D27f","OPF7D28f","OPF7D28APf")) + theme(legend.position = "bottom") + scale_fill_manual("Genus", values = cb_palette1) + scale_color_viridis(option = "D")+ theme_bw() + theme(axis.text.x = element_text(angle = 90)) + ggtitle("Fungi relative abundance in winery ferments") + theme(legend.title = element_text(size = 18))
+                                                      "OPF7D27f","OPF7D28f","OPF7D28APf")) + theme(legend.position = "bottom") + scale_fill_manual("Genus", values = cb_palette1) 
+                                                      + scale_color_viridis(option = "D") + theme_bw() + theme(axis.text.x = element_blank()) + ggtitle("(B)") + theme(legend.title = element_text(size = 25))
 
+publication_style<- basic + scale_y_continuous(expand=c(0,0)) +
+labs(x = "\nDays from harvest",
+       y = "Relative abundance")
 
-publication_style<- basic + theme(axis.line = element_line(size=0.5),panel.background = element_rect(fill=NA,size=rel(20)), panel.grid.minor = element_line(colour = NA), axis.text = element_text(size=10), axis.title = element_text(size=18)) 
-
-#### To stop the bars from floating
-
-publication_style + scale_y_continuous(expand=c(0,0))              
+publication_style            
   
 
-#### To make Vineyard relative abundance plot using core fungi microbiome
+# To make Vineyard relative abundance plot using core fungi microbiome
 
-#Subset groups by environmental system to Vineyard
-Winery_ge_ps <- phyloseq::subset_samples(ps_ge_location, Location == "Vineyard")
+Vineyard_ge_ps <- phyloseq::subset_samples(ps_ge_location, Location == "Vineyard") #Subset groups by environmental system to Vineyard
 
 ps_ge_rel_vine <- microbiome::transform(Vineyard_ge_ps, "compositional")
 
@@ -320,35 +332,33 @@ ps_ge_rel_vine <- Vineyard_ge_ps %>%
   aggregate_rare(level = "Genus", detection = 0.0001, prevalence = 70/100) %>% 
   microbiome::transform(transform = "compositional")
   
-## To see core Fungal Microbiome associated with the Vineyard system
+# To see core Fungal Microbiome associated with the Vineyard system
 core_members(ps_ge_rel_vine, detection = 0.0001, prevalence = 70/100)
   
- #### Creating a palette with many colors
-  
- cb_palette <- c("#999999", "#E69F00", "#56B4E9",
+# Creating a palette with many colors
+cb_palette <- c("#999999", "#E69F00", "#56B4E9",
                 "#F0E442","#9933FF", "#0072B2", "#D55E00", "#CC79A7","#000000") 
 
 # Actual plot 
+
 basic <- plot_composition(ps_ge_rel_vine, sample.sort = c("OPF1D1f", "OPF1D2f", "OPF1D3f", "OPF1D4f", "OPF1D5f", "OPF1D6f", "OPF1D7f","OPF1D8f","OPF1D9f","OPF1D10f","OPF1D11f",
                                              "OPF1D12f","OPF1D13f","OPF1D14f","OPF1D15f","OPF1D16f","OPF1D17f","OPF1D18f","OPF1D19f","OPF1D20f","OPF1D21f","OPF1D22f",
-                                             "OPF1D23f","OPF1D24f","OPF1D25f","OPF1D26f","OPF1D27f","OPF1D28f","OPF1D28APf")) + theme(legend.position = "bottom") + scale_fill_manual("Genus", values = cb_palette) + scale_color_viridis(option = "D")+ theme_bw() + theme(axis.text.x = element_text(angle = 90)) + ggtitle("Fungi relative abundance in vineyard ferments") + theme(legend.title = element_text(size = 18))
+                                             "OPF1D23f","OPF1D24f","OPF1D25f","OPF1D26f","OPF1D27f","OPF1D28f","OPF1D28APf")) + theme(legend.position = "bottom") + 
+                                             scale_fill_manual("Genus", values = cb_palette) + scale_color_viridis(option = "D") + theme_bw() + theme(axis.text.x = element_blank()) + ggtitle("(A)") + theme(legend.title = element_text(size = 25))
 
+publication_style<- basic + scale_y_continuous(expand=c(0,0)) +
+labs(x = "\nDays from harvest",
+       y = "Relative abundance")
 
-publication_style<- basic + theme(axis.line = element_line(size=0.5),panel.background = element_rect(fill=NA,size=rel(20)), panel.grid.minor = element_line(colour = NA), axis.text = element_text(size=10), axis.title = element_text(size=18)) 
+publication_style
 
-#### To stop the bars from floating
-
-publication_style + scale_y_continuous(expand=c(0,0))
-
-
-#### Making Alpha diversity plots
+# Making Alpha diversity plots
 adiv <- data.frame(
     "Observed" = phyloseq::estimate_richness(ps, measures = "Observed"),
   "Shannon" = phyloseq::estimate_richness(ps, measures = "Shannon"),
   "InvSimpson" = phyloseq::estimate_richness(ps, measures = "InvSimpson"),
   "Location" = phyloseq::sample_data(ps)$Location)
 head(adiv)
-
 
 adiv %>%
   gather(key = metric, value = value, "Shannon") %>%
@@ -359,24 +369,20 @@ adiv %>%
   labs(x = "", y = "Shannon Index") +
   theme(legend.position="none")
 
-##Extract meta data
+#Extract meta data
 
 ps.meta <- meta(ps)
 (head(ps.meta))
 
-##Add the diversity table to metadata
-
+#Add the diversity table to metadata
 ps.meta$Shannon <- adiv$Shannon 
 ps.meta$InverseSimpson <- adiv$InvSimpson
 ps.meta$Observed <- adiv$Observed
 
-### create a list of pairwise comaprisons
-
+# create a list of pairwise comaprisons
 Ferment_Loc <- levels(ps.meta$Location)
-
 Ferment_Loc <- unique(ps.meta$Location)
 print(Ferment_Loc)
-
 # make a pairwise list that we want to compare.
 Ferment_Loc.pairs <-  combn(seq_along(Ferment_Loc), 2, simplify = FALSE, FUN = function(i)Ferment_Loc[i])                        
                             
@@ -393,35 +399,36 @@ print(Shannon_alpha_diveristy)
 #Wilcoxon test (Shannon)
 wilcox.test(Shannon ~ Location, data = adiv, conf.int = TRUE) 
 
-###Run a Shapiro-Wilk test of normality
+#Run a Shapiro-Wilk test of normality
 shapiro.test(alpha.diversity$Shannon)
 
-###Beta-diversity
-##### Using phylogenic tree info to do some beta-diversity analysis
+#Beta-diversity
 
-##Generate distances
-ord_unifrac <- ordinate(ps_rel_abund, method = "PCoA", distance = "wunifrac") 
+ord_unifrac <- ordinate(ps_rel_abund, method = "PCoA", distance = "wunifrac")    ##Generate distances
 ord_unifrac_un <- ordinate(ps_rel_abund, method = "PCoA", distance = "unifrac") 
 
-## Using weighted unifrac
-anosim(ord_unifrac$values, sample_info_tab$Location, permutations = 1000)
+anosim(ord_unifrac$values, sample_info_tab$Location, permutations = 1000) ## Apply anosim using weighted unifrac
 
-## Using unweighted unifrac
-anosim(ord_unifrac_un$values, sample_info_tab$Location, permutations = 1000)
+anosim(ord_unifrac_un$values, sample_info_tab$Location, permutations = 1000) ## Apply using unweighted unifrac
 
-##### Getting a visual of beta-diversity using NMDS (A rank based approach)
+# Getting a visual of beta-diversity using NMDS 
 set.seed(1)
-ord.nmds.bray <- ordinate(ps_rel_abund, method="NMDS", distance="bray")
+ord.nmds.bray <- ordinate(ps_rel_abund, method="NMDS", distance="bray") 
 
-## Call NMDS to See stress value. 
+# Call NMDS to See stress value. 
 ord.nmds.bray
 
 #Actual NMDS plot
-P<- plot_ordination(ps_rel_abund, ord.nmds.bray, color="Location", shape = "Ferment_Stage", title="Bray NMDS")
+P<- plot_ordination(ps, ord.nmds.bray, color="Location", shape = "Ferment_Stage")
 
-xx<- P + geom_point(size=3.5, alpha=0.75) + ggtitle("LSU Bray NMDS - All Samples") + scale_colour_brewer(type="qual", palette="Set1") + stat_ellipse()
+#Publication style
+xx<- P + geom_point(size=3.5, alpha=0.75) + scale_colour_brewer(type="qual", palette="Set1") + stat_ellipse()
 
-xx + annotate("text", x = -0.9, y= 1.2, label = "Stress = 0.08")
+NMDS<- xx + annotate("text", x = -0.9, y= 1.2, label = "Stress = 0.02") + theme(panel.background = element_rect(fill = 'white', colour = 'black')) + 
+          + theme(text = element_text(size = 16)) + geom_point(size = 3.5)
+
+NMDS
+
 
 #Differential Abundance using DESeq2
 sample_data(ps)$Location <- as.factor(sample_data(ps)$Location)
@@ -434,7 +441,6 @@ res <- results(ds, contrast=c("Location", "Vineyard", "Winery"), alpha=alpha)
 res <- res[order(res$padj, na.last=NA), ]
 res_sig <- res[(res$padj < alpha), ]
 res_sig
-
 
 res_sig <- cbind(as(res_sig, "data.frame"), as(tax_table(ps)[rownames(res_sig), ], "matrix"))
 colnames(res_sig) <- make.unique(names(res_sig))
