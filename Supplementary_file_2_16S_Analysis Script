@@ -217,11 +217,6 @@ row.names(taxa.PRINT) <- sub(">", "", asv_headers)
 write.table(taxa.PRINT, "ASVs_named_correctly.tsv", sep="\t", quote=F, col.names=NA)
 
 #
-vector_for_decontam <- rep(FALSE, 58)
-contam_df <- isContaminant(t(asv_tab), neg=vector_for_decontam)
-table(contam_df$contaminant)
-
-#
 tax_tab <- as.matrix(read.table("ASVs_named_correctly.tsv", header=T,
            row.names=1, check.names=F, sep="\t"))
 
