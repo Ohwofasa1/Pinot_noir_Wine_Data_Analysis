@@ -436,7 +436,7 @@ ord.nmds.bray <- ordinate(ps_rel_abund, method="NMDS", distance="bray")
 ord.nmds.bray
 
 #Actual NMDS plot
-P<- plot_ordination(ps, ord.nmds.bray, color="Location", shape = "Ferment_Stage")
+P<- plot_ordination(ps_rel_abund, ord.nmds.bray, color="Location", shape = "Ferment_Stage")
 
 #Publication style
 xx<- P + geom_point(size=3.5, alpha=0.75) + scale_colour_brewer(type="qual", palette="Set1") + stat_ellipse()
