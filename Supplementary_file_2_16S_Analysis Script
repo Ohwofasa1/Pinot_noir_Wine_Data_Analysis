@@ -425,7 +425,7 @@ anosim(ord_unifrac_un$values, sample_info_tab$Location, permutations = 1000) ## 
 
 # Getting a visual of beta-diversity using NMDS (A rank based approach)
 set.seed(1)
-ord.nmds.bray <- ordinate(ps_rel_abund, method="NMDS", distance="bray")
+ord.nmds.bray <- ordinate(otu_table(ps_rel_abund), method="NMDS", distance="bray")
 
 # Call NMDS to See stress value. 
 ord.nmds.bray
