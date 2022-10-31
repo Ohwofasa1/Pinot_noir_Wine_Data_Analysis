@@ -126,7 +126,7 @@ fitGTR <- optim.pml(fitGTR, model = "GTR", optInv = TRUE, optGamma = TRUE,
 map <- import_qiime_sample_data("UclustCombinedMicrobiomeData.tsv")
 
 # Creating  Phyloseq object
-ps <- phyloseq(otu_table(seqtab.nochim_final, taxa_are_rows = FALSE),
+ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows = FALSE),
               tax_table(taxa.PRINT),phy_tree(fitGTR$tree))
 
 # Merge ps with map
@@ -134,7 +134,11 @@ ps <- merge_phyloseq(ps, map)
 ps
 
 # Taxa cleaning 
-ps1 <- ps %>%
+ps0 <- subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
+ps0
+
+
+ps1 <- ps0 %>%
   subset_taxa(
     Kingdom == "Bacteria" &
     Family  != "Mitochondria" &
