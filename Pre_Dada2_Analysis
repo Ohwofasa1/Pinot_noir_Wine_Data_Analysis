@@ -1,17 +1,3 @@
-###download raw data
-
-# Run ID:   
-# Experiment name: AG890
-
-# Download location
-/home/users/dhamim/workingdir/DATA/fermentation/AG890
-
-bs download run -i *Insert_Run_ID* -o /home/users/dhamim/workingdir/DATA/fermentation/AG890
-
-#delete the sample sheet
-
-#open terminal at fermentation/AG890
-
 bcl2fastq --processing-threads 8 --create-fastq-for-index-reads --use-bases-mask Y251,I8,I8,Y251 --runfolder-dir ./ --barcode-mismatches 0 --output-dir LSU_Data
 
 
