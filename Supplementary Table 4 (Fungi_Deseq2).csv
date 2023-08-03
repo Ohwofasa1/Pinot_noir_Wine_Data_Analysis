@@ -1,3 +1,17 @@
+Table containing the significantly differentially expressed genes. The columns include													
+baseMean = the average of the normalized counts taken over all samples													
+log2FoldChange = log2 fold change between the groups. E.g. value 2 means that the expression has increased 4-fold													
+lfcSE = standard error of the log2FoldChange estimate													
+stat = Wald statistic													
+pvalue = Wald test p-value													
+													
+													
+Reference:  M Love, W Huber and S Anders: Moderated estimation of fold change and dispersion for RNA-Seq data with DESeq2. Genome Biol. 2014 15:550													
+
+
+
+
+
 "","baseMean","log2FoldChange","lfcSE","stat","pvalue","padj","Kingdom","Phylum","Class","Order","Family","Genus","Species"
 "AAAGCTCAAATTTGAAATCCCCCGGGAATTGTAATTTGAAGAGATTTGGGTCCGGCCGGCAGGGGTTAAGTCCACTGGAAAGTGGCGCCACAGAGGGTGACAGCCCCGTGAACCCCTTTAAAGCCCTCATCCCAGGTCTCCAAGAGTCGAGTTGTTTGGGAATGCAGCTCTAAGTGGGTGGTAAATTCCATCTAAAGCTAAATACCGGCGAGAGACCGATA",20.2782047218691,7.59441446038246,0.884825148490514,8.58295503166734,9.24665102097586e-18,1.08185816945418e-15,"Fungi","Ascomycota","Saccharomycetes","Saccharomycetales","Metschnikowiaceae","Metschnikowia",NA
 "AAAGCTCAAATTTGAAATCCCCCGGGAATTGTAATTTGAAGAGATTTGGGTCCGGCCGGCGGGGGTTAAGTCCACTGGAAAGTGGCGCCACAGAGGGTGACAGCCCCGTGAACCCCCTCAACGCCTTCATCCCAGATCTCCAAGAGTCGAGTTGTTTGGGAATGCAGCTCTAAGTGGGTGGTAAATTCCATCTAAAGCTAAATACCGGCGAGAGACCGATA",13.6470055681299,5.10173148434907,1.0983357013825,4.64496554006884,3.40133224422752e-06,9.96032967166548e-05,"Fungi","Ascomycota","Saccharomycetes","Saccharomycetales","Metschnikowiaceae","Metschnikowia",NA
